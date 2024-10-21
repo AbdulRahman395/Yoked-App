@@ -51,12 +51,23 @@ const postController = {
         }
     },
 
-    // Get all posts for a user
+    // Get all posts of a user (with JWT)
     getMyPosts: async (req, res) => {
         try {
+            const { page = 1, limit = 10, sortBy = 'createdAt', order = 'desc' } = req.query;
+
+            const pageNumber = parseInt(page, 10);
+            const limitNumber = parseInt(limit, 10);
+            const skip = (pageNumber - 1) * limitNumber;
+
             const userId = req.user.id;
 
-            const myPosts = await Post.find({ userId });
+            const myPosts = await Post.find({ userId })
+                .sort({ [sortBy]: order === 'desc' ? -1 : 1 })
+                .skip(skip)
+                .limit(limitNumber);
+
+            const totalMyPosts = await Post.countDocuments({ userId });
 
             if (!myPosts.length) {
                 return res.status(404).json({ message: 'No posts found for this user' });
@@ -64,6 +75,10 @@ const postController = {
 
             return res.status(200).json({
                 message: 'Posts fetched successfully',
+                totalMyPosts,
+                page: pageNumber,
+                limit: limitNumber,
+                totalPages: Math.ceil(totalMyPosts / limitNumber),
                 posts: myPosts
             });
         } catch (error) {
@@ -93,12 +108,23 @@ const postController = {
         }
     },
 
-    // Get all posts by a specific user
+    // Get all posts of a specific user
     getAllUserPosts: async (req, res) => {
         try {
+            const { page = 1, limit = 10, sortBy = 'createdAt', order = 'desc' } = req.query;
+
+            const pageNumber = parseInt(page, 10);
+            const limitNumber = parseInt(limit, 10);
+            const skip = (pageNumber - 1) * limitNumber;
+
             const { userId } = req.params;
 
-            const userPosts = await Post.find({ userId });
+            const userPosts = await Post.find({ userId })
+                .sort({ [sortBy]: order === 'desc' ? -1 : 1 })
+                .skip(skip)
+                .limit(limitNumber);
+
+            const totalUserPosts = await Post.countDocuments({ userId });
 
             if (!userPosts.length) {
                 return res.status(404).json({ message: 'No posts found for this user' });
@@ -106,6 +132,10 @@ const postController = {
 
             return res.status(200).json({
                 message: 'Posts fetched successfully',
+                totalUserPosts,
+                page: pageNumber,
+                limit: limitNumber,
+                totalPages: Math.ceil(totalUserPosts / limitNumber),
                 posts: userPosts
             });
         } catch (error) {
@@ -117,7 +147,18 @@ const postController = {
     // Get all posts in the collection
     getAllPosts: async (req, res) => {
         try {
-            const allPosts = await Post.find({});
+            const { page = 1, limit = 10, sortBy = 'createdAt', order = 'desc' } = req.query;
+
+            const pageNumber = parseInt(page, 10);
+            const limitNumber = parseInt(limit, 10);
+            const skip = (pageNumber - 1) * limitNumber;
+
+            const allPosts = await Post.find({})
+                .sort({ [sortBy]: order === 'desc' ? -1 : 1 })
+                .skip(skip)
+                .limit(limitNumber);
+
+            const totalPosts = await Post.countDocuments({});
 
             if (!allPosts.length) {
                 return res.status(404).json({ message: 'No posts found' });
@@ -125,6 +166,10 @@ const postController = {
 
             return res.status(200).json({
                 message: 'All posts fetched successfully',
+                totalPosts,
+                page: pageNumber,
+                limit: limitNumber,
+                totalPages: Math.ceil(totalPosts / limitNumber),
                 posts: allPosts
             });
         } catch (error) {
