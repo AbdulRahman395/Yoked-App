@@ -6,6 +6,7 @@ require('./config/databaseConfig');
 
 // Routes
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/posts', require('./routes/postRoutes'));
 
 const port = 5000;
 app.listen(port, () => {
