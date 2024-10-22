@@ -80,137 +80,47 @@ const AthleteProfileController = {
     },
 
     // 2. Get Athlete Profile by User ID
-    // getAthleteProfile: async (req, res) => {
-    //     const { userId } = req.params;
-
-    //     try {
-    //         const athleteProfile = await Athlete.findOne({ user: userId }).populate('user', 'fullname username profileImage');
-    //         if (!athleteProfile) {
-    //             return res.status(404).json({ message: "Athlete profile not found." });
-    //         }
-
-    //         // Calculate the percentage for each body stat and achievement count
-    //         const calculatePercentage = (current, goal) => (goal ? (current / goal) * 100 : 0).toFixed(2);
-
-    //         const profileWithPercentage = {
-    //             ...athleteProfile.toObject(),
-    //             user: {
-    //                 ...athleteProfile.user,
-    //                 fullname: athleteProfile.user.fullname,
-    //                 username: athleteProfile.user.username,
-    //                 profileImage: athleteProfile.user.profileImage
-    //             },
-    //             squats: {
-    //                 ...athleteProfile.squats,
-    //                 percentageAchieved: calculatePercentage(athleteProfile.squats.current, athleteProfile.squats.goal)
-    //             },
-    //             biceps: {
-    //                 ...athleteProfile.biceps,
-    //                 percentageAchieved: calculatePercentage(athleteProfile.biceps.current, athleteProfile.biceps.goal)
-    //             },
-    //             chest: {
-    //                 ...athleteProfile.chest,
-    //                 percentageAchieved: calculatePercentage(athleteProfile.chest.current, athleteProfile.chest.goal)
-    //             },
-    //             neck: {
-    //                 ...athleteProfile.neck,
-    //                 percentageAchieved: calculatePercentage(athleteProfile.neck.current, athleteProfile.neck.goal)
-    //             },
-    //             back: {
-    //                 ...athleteProfile.back,
-    //                 percentageAchieved: calculatePercentage(athleteProfile.back.current, athleteProfile.back.goal)
-    //             },
-    //             achievements: {
-    //                 count: athleteProfile.achievements.length
-    //             }
-    //         };
-
-    //         return res.status(200).json(profileWithPercentage);
-    //     } catch (error) {
-    //         console.error(error);
-    //         return res.status(500).json({ error: "Internal server error" });
-    //     }
-    // },
-
-    // 2. Get Athlete Profile by JWT
     getAthleteProfile: async (req, res) => {
+        const { userId } = req.params;
+    
         try {
-            // Ensure the authorization header is provided
-            if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
-                return res.status(401).json({ message: "Authorization header missing or malformed." });
-            }
-
-            // Extract and verify the JWT token
-            const token = req.headers.authorization.split(' ')[1];
-            const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-
-            // Log the entire decoded token for debugging
-            console.log('Decoded Token:', decodedToken);
-
-            // Try to extract userId from the decoded token
-            const userId = decodedToken.userId || decodedToken.id || decodedToken.sub; // Fallback to other fields
-            console.log('Extracted userId:', userId);
-
-            if (!userId) {
-                return res.status(400).json({ message: "User ID not found in token." });
-            }
-
-            // Find the athlete profile and populate the user details
-            const athleteProfile = await Athlete.findOne({ user: userId }).populate('user', 'fullname username profileImage');
-
-            // Log the athleteProfile for debugging
-            console.log('Athlete Profile:', athleteProfile);
-
+            const athleteProfile = await Athlete.findOne({ user: userId })
+                .populate('user', 'fullname username profileImage');
+            
             if (!athleteProfile) {
                 return res.status(404).json({ message: "Athlete profile not found." });
             }
-
-            // Helper function to calculate percentage
-            const calculatePercentage = (current, goal) => (goal ? ((current / goal) * 100).toFixed(2) : 0);
-
-            // Structure the response with percentages and achievement count
-            const profileWithPercentage = {
-                ...athleteProfile.toObject(),
-                user: {
-                    fullname: athleteProfile.user.fullname,
-                    username: athleteProfile.user.username,
-                    profileImage: athleteProfile.user.profileImage
-                },
-                squats: {
-                    ...athleteProfile.squats,
-                    percentageAchieved: calculatePercentage(athleteProfile.squats.current, athleteProfile.squats.goal)
-                },
-                biceps: {
-                    ...athleteProfile.biceps,
-                    percentageAchieved: calculatePercentage(athleteProfile.biceps.current, athleteProfile.biceps.goal)
-                },
-                chest: {
-                    ...athleteProfile.chest,
-                    percentageAchieved: calculatePercentage(athleteProfile.chest.current, athleteProfile.chest.goal)
-                },
-                neck: {
-                    ...athleteProfile.neck,
-                    percentageAchieved: calculatePercentage(athleteProfile.neck.current, athleteProfile.neck.goal)
-                },
-                back: {
-                    ...athleteProfile.back,
-                    percentageAchieved: calculatePercentage(athleteProfile.back.current, athleteProfile.back.goal)
-                },
-                achievements: {
-                    count: athleteProfile.achievements ? athleteProfile.achievements.length : 0
-                }
+    
+            // Prepare the data to send as a response
+            const profileResponse = {
+                _id: athleteProfile._id,
+                user: athleteProfile.user,
+                profileImage: athleteProfile.profileImage,
+                prPoints: athleteProfile.prPoints,
+                bodyFat: athleteProfile.bodyFat,
+                deadlift: athleteProfile.deadlift,
+                muscleMass: athleteProfile.muscleMass,
+                benchPress: athleteProfile.benchPress,
+                shoulders: athleteProfile.shoulders,
+                squats: athleteProfile.squats,
+                biceps: athleteProfile.biceps,
+                chest: athleteProfile.chest,
+                neck: athleteProfile.neck,
+                back: athleteProfile.back,
+                achievements: athleteProfile.achievements,
+                followers: athleteProfile.followers,
+                following: athleteProfile.following,
+                activity: athleteProfile.activity,
+                createdAt: athleteProfile.createdAt,
+                updatedAt: athleteProfile.updatedAt
             };
-
-            // Return the response
-            return res.status(200).json(profileWithPercentage);
+    
+            return res.status(200).json(profileResponse);
         } catch (error) {
-            console.error('Error:', error);
-            if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-                return res.status(401).json({ message: "Invalid or expired token." });
-            }
-            return res.status(500).json({ message: "Internal server error" });
+            console.error(error);
+            return res.status(500).json({ error: "Internal server error" });
         }
-    },
+    },    
 
     // 3. Update Athlete Profile
     updateAthleteProfile: async (req, res) => {
