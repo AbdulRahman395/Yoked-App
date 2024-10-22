@@ -18,10 +18,15 @@ const userController = {
             postCode,
             address,
             gender,
-            isAthlete
+            isAthlete,
+            dob,
+            currentWeight,
+            goalWeight,
+            height
         } = req.body;
 
         try {
+            // Check if a user with the same email already exists
             const existingUser = await User.findOne({ email });
 
             if (existingUser) {
@@ -43,15 +48,22 @@ const userController = {
                 address,
                 gender,
                 isAthlete,
-                otp,
-                otpExpire: Date.now() + 300000,
+                dob, // Store dob for age calculation
+                currentWeight, // Store user's current weight
+                goalWeight, // Store user's goal weight
+                height, // Store user's height
+                otp, // OTP for verification
+                otpExpire: Date.now() + 300000, // OTP expiration time (5 minutes)
                 isVerified: false
             });
 
-            // Send OTP to user's email
+            // Send OTP to user's email for verification
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
-                auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
             });
 
             const mailOptions = {
@@ -59,16 +71,17 @@ const userController = {
                 to: email,
                 subject: 'Verify Your Account - OTP',
                 html: `<p>Dear ${fullname},</p>
-                        <p>Here is your One-Time Password (OTP) to verify your account:</p>
-                        <p><b>${otp}</b></p>
-                        <p>This OTP is valid for 5 minutes.</p>`
+                    <p>Here is your One-Time Password (OTP) to verify your account:</p>
+                    <p><b>${otp}</b></p>
+                    <p>This OTP is valid for 5 minutes.</p>`
             };
 
             await transporter.sendMail(mailOptions);
 
             return res.status(201).json({ message: "User registered. Please verify your email by entering the OTP sent to your email." });
         } catch (error) {
-            res.status(500).json({ error: "Internal server error" });
+            console.error(error);
+            return res.status(500).json({ error: "Internal server error" });
         }
     },
 
@@ -114,6 +127,44 @@ const userController = {
             res.status(200).json({ message: "Welcome to Homepage", token });
         } catch (error) {
             res.status(500).json({ error: "Internal server error" });
+        }
+    },
+
+    // Change password for authenticated user
+    changePassword: async (req, res) => {
+        const { oldPassword, newPassword } = req.body;
+
+        try {
+            // Extract the JWT token from the Authorization header
+            const token = req.headers.authorization.split(' ')[1];
+            if (!token) {
+                return res.status(401).json({ message: "Authorization token is required" });
+            }
+
+            // Verify the token and extract the userId from it
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const userId = decoded._id;
+
+            // Find the user by the extracted userId
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            // Check if the old password is correct
+            const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
+            if (!isPasswordMatch) {
+                return res.status(400).json({ message: "Old password is incorrect" });
+            }
+
+            // Hash the new password and update the user's password
+            user.password = await bcrypt.hash(newPassword, 10);
+            await user.save();
+
+            return res.status(200).json({ message: "Password updated successfully" });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Internal server error" });
         }
     },
 
@@ -178,6 +229,116 @@ const userController = {
             }
         } catch (error) {
             res.status(500).send({ message: 'Server error' });
+        }
+    },
+
+    // Update isAthlete status
+    updateIsAthleteStatus: async (req, res) => {
+        const { isAthlete } = req.body;
+
+        try {
+            // Extract the JWT token from the Authorization header
+            const token = req.headers.authorization.split(' ')[1];
+            if (!token) {
+                return res.status(401).json({ message: "Authorization token is required" });
+            }
+
+            // Verify the token and extract the userId from it
+            const decoded = jwt.verify(token, secretKey);
+            const userId = decoded._id;
+
+            // Find the user by the extracted userId
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            // Update the isAthlete status
+            user.isAthlete = isAthlete;
+            await user.save();
+
+            return res.status(200).json({ message: "isAthlete status updated successfully.", isAthlete: user.isAthlete });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Internal server error" });
+        }
+    },
+
+    // Get user by ID (For admin or user profile viewing by ID)
+    getUserById: async (req, res) => {
+        const { userId } = req.params; // Extract userId from the URL params
+
+        try {
+            const user = await User.findById(userId);
+
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            // Return the user data formatted like in the provided image
+            return res.status(200).json({
+                _id: user._id,
+                fullname: user.fullname,
+                username: user.username,
+                phone: user.phone,
+                email: user.email,
+                isVerified: user.isVerified,
+                isAthlete: user.isAthlete ? 'Yes' : 'No', // Display as "Yes" or "No"
+                dob: user.dob,
+                currentWeight: user.currentWeight,
+                goalWeight: user.goalWeight,
+                height: user.height,
+                posts: user.posts || [],
+                followers: user.followers || [],
+                following: user.following || [],
+                age: user.age || null
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Internal server error" });
+        }
+    },
+
+    // Get the logged-in user's profile (Authenticated)
+    getMyProfile: async (req, res) => {
+        try {
+            // Extract the JWT token from the Authorization header
+            const token = req.headers.authorization.split(' ')[1];
+            if (!token) {
+                return res.status(401).json({ message: "Authorization token is required" });
+            }
+
+            // Verify the token and extract the userId from it
+            const decoded = jwt.verify(token, secretKey);
+            const userId = decoded._id;
+
+            // Find the user by the extracted userId
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            // Return the logged-in user's profile data formatted like in the provided image
+            return res.status(200).json({
+                _id: user._id,
+                fullname: user.fullname,
+                username: user.username,
+                phone: user.phone,
+                email: user.email,
+                isVerified: user.isVerified,
+                isAthlete: user.isAthlete ? 'Yes' : 'No',
+                dob: user.dob,
+                currentWeight: user.currentWeight,
+                goalWeight: user.goalWeight,
+                height: user.height,
+                posts: user.posts || [],
+                followers: user.followers || [],
+                following: user.following || [],
+                age: user.age || null
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Internal server error" });
         }
     }
 }

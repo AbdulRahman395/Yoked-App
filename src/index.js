@@ -9,8 +9,8 @@ require('./config/databaseConfig');
 
 // Routes
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/athletes', require('./routes/athleteRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
-
 
 // Session setup
 app.use(session({

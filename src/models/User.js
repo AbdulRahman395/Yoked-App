@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
-// Schema banaya
-const UserSchema = new mongoose.Schema({
+// Schema creation
+const UserSchema = new Schema({
     fullname: {
         type: String,
         required: true
@@ -38,10 +39,60 @@ const UserSchema = new mongoose.Schema({
         type: String,
         enum: ["Yes", "No"],
         default: "No"
-    }
+    },
+    dob: {
+        type: Date, // Store date of birth for calculating age
+        required: true
+    },
+    age: {
+        type: Number // Store the calculated age
+    },
+    currentWeight: {
+        type: Number,
+        required: true
+    },
+    goalWeight: {
+        type: Number,
+        required: true
+    },
+    height: {
+        type: Number,
+        required: true
+    },
+    posts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Post' // Referencing posts
+    }],
+    followers: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User' // Referencing users for followers
+    }],
+    following: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User' // Referencing users for following
+    }]
 });
 
+// Index for OTP expiration
 UserSchema.index({ otpExpire: 1 }, { expireAfterSeconds: 60 });
+
+// Virtual field to calculate age based on dob
+UserSchema.virtual('calculatedAge').get(function () {
+    if (this.dob) {
+        const ageDifMs = Date.now() - this.dob.getTime();
+        const ageDate = new Date(ageDifMs);
+        return Math.abs(ageDate.getUTCFullYear() - 1970);
+    }
+    return null;
+});
+
+// Middleware to automatically calculate and set the 'age' before saving the user
+UserSchema.pre('save', function (next) {
+    if (this.dob) {
+        this.age = this.calculatedAge;
+    }
+    next();
+});
 
 const User = mongoose.model("User", UserSchema);
 
