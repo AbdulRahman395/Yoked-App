@@ -91,10 +91,17 @@ const AthleteProfileController = {
                 return res.status(404).json({ message: "Athlete profile not found." });
             }
     
-            // Prepare the data to send as a response
-            const profileResponse = {
+            // Function to calculate the percentage of goal achieved
+            const calculatePercentage = (current, goal) => (goal ? ((current / goal) * 100).toFixed(2) : 0);
+    
+            // Prepare the profile data with percentages and achievements count
+            const profileWithPercentage = {
                 _id: athleteProfile._id,
-                user: athleteProfile.user,
+                user: {
+                    _id: athleteProfile.user._id,
+                    fullname: athleteProfile.user.fullname,
+                    username: athleteProfile.user.username
+                },
                 profileImage: athleteProfile.profileImage,
                 prPoints: athleteProfile.prPoints,
                 bodyFat: athleteProfile.bodyFat,
@@ -102,12 +109,34 @@ const AthleteProfileController = {
                 muscleMass: athleteProfile.muscleMass,
                 benchPress: athleteProfile.benchPress,
                 shoulders: athleteProfile.shoulders,
-                squats: athleteProfile.squats,
-                biceps: athleteProfile.biceps,
-                chest: athleteProfile.chest,
-                neck: athleteProfile.neck,
-                back: athleteProfile.back,
-                achievements: athleteProfile.achievements,
+                squats: {
+                    current: athleteProfile.squats.current,
+                    goal: athleteProfile.squats.goal,
+                    percentage: calculatePercentage(athleteProfile.squats.current, athleteProfile.squats.goal)
+                },
+                biceps: {
+                    current: athleteProfile.biceps.current,
+                    goal: athleteProfile.biceps.goal,
+                    percentage: calculatePercentage(athleteProfile.biceps.current, athleteProfile.biceps.goal)
+                },
+                chest: {
+                    current: athleteProfile.chest.current,
+                    goal: athleteProfile.chest.goal,
+                    percentage: calculatePercentage(athleteProfile.chest.current, athleteProfile.chest.goal)
+                },
+                neck: {
+                    current: athleteProfile.neck.current,
+                    goal: athleteProfile.neck.goal,
+                    percentage: calculatePercentage(athleteProfile.neck.current, athleteProfile.neck.goal)
+                },
+                back: {
+                    current: athleteProfile.back.current,
+                    goal: athleteProfile.back.goal,
+                    percentage: calculatePercentage(athleteProfile.back.current, athleteProfile.back.goal)
+                },
+                achievements: {
+                    count: athleteProfile.achievements.length
+                },
                 followers: athleteProfile.followers,
                 following: athleteProfile.following,
                 activity: athleteProfile.activity,
@@ -115,12 +144,12 @@ const AthleteProfileController = {
                 updatedAt: athleteProfile.updatedAt
             };
     
-            return res.status(200).json(profileResponse);
+            return res.status(200).json(profileWithPercentage);
         } catch (error) {
             console.error(error);
             return res.status(500).json({ error: "Internal server error" });
         }
-    },    
+    },      
 
     // 3. Update Athlete Profile
     updateAthleteProfile: async (req, res) => {
