@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const AthleteSchema = new Schema({
-    user: {
+    userId: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: true
@@ -117,14 +117,6 @@ const AthleteSchema = new Schema({
     achievements: [{
         title: String,
         date: Date
-    }],
-    followers: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User'  // Referencing users who follow this athlete
-    }],
-    following: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User'  // Referencing users whom this athlete follows
     }],
     activity: {
         walk: {

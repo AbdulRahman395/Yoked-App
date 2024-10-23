@@ -58,19 +58,7 @@ const UserSchema = new Schema({
     height: {
         type: Number,
         required: true
-    },
-    posts: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Post' // Referencing posts
-    }],
-    followers: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User' // Referencing users for followers
-    }],
-    following: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User' // Referencing users for following
-    }]
+    }
 });
 
 // Index for OTP expiration

@@ -6,28 +6,29 @@ const postController = {
         try {
             const { caption, location, tags, audience, growthPhase, liftFocus, foundation, workoutType } = req.body;
 
+            // Extract userId from the authenticated user (assuming it's set in req.user by middleware)
             const userId = req.user._id;
 
             if (!caption || !location || !tags || !audience) {
                 return res.status(400).json({ message: 'All required fields must be filled' });
             }
 
-            // Validate required fields
+            // Validate that flair fields and the image are provided
             if (!req.file || !growthPhase || !liftFocus || !foundation || !workoutType) {
                 return res.status(400).json({ message: 'All required flair fields must be filled' });
             }
 
-            // Process tags
+            // Process tags (convert tags from comma-separated string to array)
             const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
 
             // Create the post object
             const newPost = new Post({
-                userId,
-                image: req.file.filename,
+                userId,  // Save the userId along with the post
+                image: req.file.filename,  // Assuming file upload middleware provides req.file
                 caption,
                 location,
                 tags: tagsArray,
-                audience: audience || 'everyone',
+                audience: audience || 'everyone',  // Set default audience if not provided
                 flair: {
                     growthPhase,
                     liftFocus,
@@ -36,8 +37,10 @@ const postController = {
                 }
             });
 
+            // Save the post in the database
             const savedPost = await newPost.save();
 
+            // Return a success response
             return res.status(201).json({
                 message: 'Post created successfully',
                 post: savedPost

@@ -1,4 +1,4 @@
-const express = require('express');
+const User = require('../models/User')
 const jwt = require('jsonwebtoken');
 const Follow = require('../models/Follow');
 
@@ -8,13 +8,12 @@ const followController = {
     // Follow a user
     followUser: async (req, res) => {
         try {
-            // Extract JWT
             const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
             if (!token) {
                 return res.status(401).json({ message: "Authorization token is required" });
             }
 
-            // Verify and decode the token to extract the user ID
+            // Verify and decode the token to extract the user ID (follower)
             let decoded;
             try {
                 decoded = jwt.verify(token, secretKey);
@@ -50,7 +49,12 @@ const followController = {
 
             await newFollow.save();
 
-            // Success response
+            // Add followerId to followee's followers array
+            await User.findByIdAndUpdate(followeeId, { $push: { followers: followerId } });
+
+            // Add followeeId to follower's following array
+            await User.findByIdAndUpdate(followerId, { $push: { following: followeeId } });
+
             return res.status(201).json({ message: 'Followed successfully', follow: newFollow });
         } catch (error) {
             console.error('Error while following user:', error);
@@ -61,7 +65,6 @@ const followController = {
     // Unfollow a user
     unfollowUser: async (req, res) => {
         try {
-
             const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
             if (!token) {
                 return res.status(401).json({ message: "Authorization token is required" });
@@ -76,7 +79,6 @@ const followController = {
             }
 
             const followerId = decoded._id;
-
             if (!followerId) {
                 return res.status(401).json({ message: "Invalid token, userId missing" });
             }
@@ -90,6 +92,12 @@ const followController = {
                 return res.status(404).json({ message: 'Follow relationship not found.' });
             }
 
+            // Remove followerId from followee's followers array
+            await User.findByIdAndUpdate(followeeId, { $pull: { followers: followerId } });
+
+            // Remove followeeId from follower's following array
+            await User.findByIdAndUpdate(followerId, { $pull: { following: followeeId } });
+
             // Success response
             return res.status(200).json({ message: 'Unfollowed successfully' });
         } catch (err) {
@@ -98,7 +106,7 @@ const followController = {
         }
     },
 
-    // Get all followers of the authenticated user
+    // Get all followers of a user with JWT
     getMyFollowers: async (req, res) => {
         try {
             const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
@@ -130,14 +138,71 @@ const followController = {
         }
     },
 
-    // Get all followees of a user
-    getFollowing: async (req, res) => {
-        const { userId } = req.params;
-
+    // Get all followings of a user with JWT
+    getMyFollowing: async (req, res) => {
         try {
-            const following = await Follow.find({ followerId: userId }).populate('followeeId', 'username');
+            // Extract JWT from the Authorization header
+            const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+            if (!token) {
+                return res.status(401).json({ message: "Authorization token is required" });
+            }
+
+            // Verify and decode the token to extract the user ID
+            let decoded;
+            try {
+                decoded = jwt.verify(token, secretKey);
+            } catch (error) {
+                return res.status(401).json({ message: "Invalid or expired token" });
+            }
+
+            const userId = decoded._id;  // Extract userId from the decoded token
+            if (!userId) {
+                return res.status(401).json({ message: "Invalid token, userId missing" });
+            }
+
+            // Fetch all followees (users the authenticated user is following)
+            const following = await Follow.find({ followerId: userId }).populate('followeeId', 'fullname username profileImage');
+
+            // Success response
             res.status(200).json(following);
         } catch (err) {
+            console.error('Error while fetching followees:', err);
+            res.status(500).json({ error: 'An error occurred while fetching followees.' });
+        }
+    },
+
+    // Get all followers of a user by userId
+    getFollowers: async (req, res) => {
+        try {
+            const { userId } = req.params;
+
+            if (!userId) {
+                return res.status(400).json({ message: "User ID is required" });
+            }
+
+            const followers = await Follow.find({ followeeId: userId }).populate('followerId', 'fullname username profileImage');
+
+            res.status(200).json(followers);
+        } catch (err) {
+            console.error('Error while fetching followers:', err);
+            res.status(500).json({ error: 'An error occurred while fetching followers.' });
+        }
+    },
+
+    // Get all followings by userId
+    getFollowing: async (req, res) => {
+        try {
+            const { userId } = req.params;
+
+            if (!userId) {
+                return res.status(400).json({ message: "User ID is required" });
+            }
+
+            const following = await Follow.find({ followerId: userId }).populate('followeeId', 'fullname username profileImage');
+
+            res.status(200).json(following);
+        } catch (err) {
+            console.error('Error while fetching followees:', err);
             res.status(500).json({ error: 'An error occurred while fetching followees.' });
         }
     }

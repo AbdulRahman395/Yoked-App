@@ -94,7 +94,7 @@ const AthleteProfileController = {
             } else {
                 // Create a new athlete profile
                 athleteProfile = new Athlete({
-                    user: userId,
+                    userId: userId,
                     profileImage: profileImagePath,
                     bodyFat,
                     deadlift,
