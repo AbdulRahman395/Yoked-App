@@ -2,11 +2,13 @@ const express = require('express');
 const AthleteProfileController = require('../controllers/athleteController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
+const upload = require('../config/multerConfig');
 
 // User Routes
-router.post("/register", authMiddleware, AthleteProfileController.createOrUpdateProfile);
+router.post("/register", authMiddleware, upload.single('profileImage'), AthleteProfileController.createProfile);
 router.get('/athlete-profile/:userId', AthleteProfileController.getAthleteProfile);
-// router.post('/forget-password', AthleteProfileController.forgetPassword);
-// router.post('/reset-password', AthleteProfileController.resetPassword);
+router.get('/my-athlete-profile', authMiddleware, AthleteProfileController.getMyAthleteProfile);
+router.delete('/delete-profile', AthleteProfileController.deleteAthleteProfile);
+router.put('/update-profile', upload.single('profileImage'), AthleteProfileController.updateProfile);
 
 module.exports = router;
