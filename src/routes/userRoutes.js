@@ -9,7 +9,7 @@ router.post('/login', userController.loginUser);
 router.post('/change-password', userController.changePassword);
 router.post('/forget-password', userController.forgetPassword);
 router.post('/reset-password', userController.resetPassword);
-router.put('/update-athlete-status', userController.updateIsAthleteStatus);
+router.put('/update-athlete-status', userController.updateAthleteStatus);
 router.get('/get-profile/:userId', userController.getUserById);
 router.get('/get-my-profile', userController.getMyProfile);
 

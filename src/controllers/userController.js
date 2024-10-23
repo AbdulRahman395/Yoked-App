@@ -233,7 +233,7 @@ const userController = {
     },
 
     // Update isAthlete status
-    updateIsAthleteStatus: async (req, res) => {
+    updateAthleteStatus: async (req, res) => {
         const { isAthlete } = req.body;
 
         try {
