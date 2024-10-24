@@ -6,7 +6,7 @@ const postController = {
         try {
             const { caption, location, tags, audience, growthPhase, liftFocus, foundation, workoutType } = req.body;
 
-            // Extract userId from the authenticated user (assuming it's set in req.user by middleware)
+            // Extract userId from JWT
             const userId = req.user._id;
 
             if (!caption || !location || !tags || !audience) {
