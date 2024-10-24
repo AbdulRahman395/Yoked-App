@@ -1,4 +1,5 @@
 const Story = require('../models/Story');
+const Follow = require('../models/Follow');
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET;
 
@@ -64,19 +65,141 @@ const storyController = {
                 return res.status(401).json({ message: "Invalid token, userId missing" });
             }
 
-            // Define the expiration time for stories (24 hours)
-            const expirationTime = 24 * 60 * 60 * 1000;
-            const currentTime = Date.now();
-
-            // Fetch stories where the createdAt timestamp is within the last 24 hours
+            // Fetch stories that have not expired
             const stories = await Story.find({
                 userId: userId,
-                createdAt: { $gte: new Date(currentTime - expirationTime) }
+                expirationDate: { $gte: new Date() } // Ensure the story hasn't expired yet
             }).sort({ createdAt: -1 });
 
-            res.status(200).json({ message: 'Stories fetched successfully', stories: stories });
+            res.status(200).json({
+                message: 'Stories fetched successfully',
+                stories: stories
+            });
         } catch (error) {
             res.status(500).json({ message: 'Error fetching stories', error: error });
+        }
+    },
+
+    // Get User's Stories with Params (No Token)
+    getUserStories: async (req, res) => {
+        try {
+            const { userId } = req.params;
+            if (!userId) {
+                return res.status(400).json({ message: "User ID is required" });
+            }
+
+            // Extract query parameters for pagination or filtering
+            const { limit, offset } = req.query;
+            const parsedLimit = parseInt(limit) || 10;
+            const parsedOffset = parseInt(offset) || 0;
+
+            // Fetch stories that haven't expired
+            const stories = await Story.find({
+                userId: userId,
+                expirationDate: { $gte: new Date() } // Only fetch non-expired stories
+            })
+                .sort({ createdAt: -1 })
+                .skip(parsedOffset)
+                .limit(parsedLimit);
+
+            res.status(200).json({
+                message: 'Stories fetched successfully',
+                total: stories.length,
+                stories: stories,
+                limit: parsedLimit,
+                offset: parsedOffset
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error fetching stories', error: error });
+        }
+    },
+
+    // Get All Active Stories of Users the Current User Follows
+    getAllStories: async (req, res) => {
+        try {
+            // Extract token from the authorization header
+            const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+            if (!token) {
+                return res.status(401).json({ message: "Authorization token is required" });
+            }
+
+            // Decode the JWT to get the current user's ID
+            let decoded;
+            try {
+                decoded = jwt.verify(token, secretKey);
+            } catch (error) {
+                return res.status(401).json({ message: "Invalid or expired token" });
+            }
+
+            const currentUserId = decoded._id;
+            if (!currentUserId) {
+                return res.status(401).json({ message: "Invalid token, userId missing" });
+            }
+
+            // Get the list of users that the current user follows
+            const followedUsers = await Follow.find({ followerId: currentUserId }).select('followeeId');
+            const followeeIds = followedUsers.map(follow => follow.followeeId);
+
+            if (followeeIds.length === 0) {
+                return res.status(200).json({ message: 'No stories to display', stories: [] });
+            }
+
+            // Fetch active stories from the users that the current user follows
+            const stories = await Story.find({
+                userId: { $in: followeeIds },
+                expirationDate: { $gte: new Date() } // Only fetch non-expired stories
+            }).sort({ createdAt: -1 });
+
+            res.status(200).json({
+                message: 'Active stories fetched successfully',
+                total: stories.length,
+                stories: stories
+            });
+        } catch (error) {
+            console.log(error)
+            res.status(500).json({ message: 'Error fetching stories', error: error });
+        }
+    },
+
+    // Delete story by ID
+    deleteStory: async (req, res) => {
+        try {
+            // Extract userId from token
+            const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+            if (!token) {
+                return res.status(401).json({ message: "Authorization token is required" });
+            }
+
+            // Decode the JWT to get the current user's ID
+            let decoded;
+            try {
+                decoded = jwt.verify(token, secretKey);
+            } catch (error) {
+                return res.status(401).json({ message: "Invalid or expired token" });
+            }
+
+            const userId = decoded._id;
+            if (!userId) {
+                return res.status(401).json({ message: "Invalid token, userId missing" });
+            }
+
+            // Extract the story ID from the request parameters
+            const { storyId } = req.params;
+            if (!storyId) {
+                return res.status(400).json({ message: "Story ID is required" });
+            }
+
+            // Find and delete the story if it belongs to the user
+            const story = await Story.findOneAndDelete({ _id: storyId, userId: userId });
+
+            // Check if the story was found and deleted
+            if (!story) {
+                return res.status(404).json({ message: "Story not found or you are not authorized to delete this story" });
+            }
+
+            res.status(200).json({ message: "Story deleted successfully" });
+        } catch (error) {
+            res.status(500).json({ message: "Error deleting story", error: error });
         }
     }
 

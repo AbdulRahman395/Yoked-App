@@ -22,12 +22,11 @@ const storySchema = new Schema({
     },
     expirationDate: {
         type: Date, 
-        default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
-        index: { expires: '24h' }
-    }    
+        default: () => new Date(Date.now() + 24 * 60 * 60 * 1000) // Expire after 24 hours
+    }
 });
 
-// Creating a TTL index to automatically delete stories after expiration
+// TTL Index - Automatically delete stories 24 hours after creation
 storySchema.index({ expirationDate: 1 }, { expireAfterSeconds: 0 });
 
 const Story = mongoose.model('Story', storySchema);
