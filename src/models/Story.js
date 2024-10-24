@@ -16,15 +16,19 @@ const storySchema = new Schema({
         enum: ['image', 'video'], 
         required: true 
     },
-    storyDate: { 
+    createdAt: { 
         type: Date, 
         default: Date.now 
     },
-    expirationDate: { 
+    expirationDate: {
         type: Date, 
-        default: () => Date.now() + 24 * 60 * 60 * 1000 
-    }
+        default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
+        index: { expires: '24h' }
+    }    
 });
+
+// Creating a TTL index to automatically delete stories after expiration
+storySchema.index({ expirationDate: 1 }, { expireAfterSeconds: 0 });
 
 const Story = mongoose.model('Story', storySchema);
 
