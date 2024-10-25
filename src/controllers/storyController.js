@@ -1,10 +1,11 @@
 const Story = require('../models/Story');
 const Follow = require('../models/Follow');
+const Mute = require('../models/Mute');
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET;
 
 const storyController = {
-    // Add a new story
+    // Add a new story ✅
     addStory: async (req, res) => {
         try {
             const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
@@ -45,7 +46,7 @@ const storyController = {
         }
     },
 
-    // Get my Stories
+    // Get my Stories ✅
     getMyStories: async (req, res) => {
         try {
             const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
@@ -80,12 +81,38 @@ const storyController = {
         }
     },
 
-    // Get User's Stories with Params (No Token)
+    // Get User's Stories with Params ✅
     getUserStories: async (req, res) => {
         try {
             const { userId } = req.params;
             if (!userId) {
                 return res.status(400).json({ message: "User ID is required" });
+            }
+
+            // Extract token from the authorization header to check muted users
+            const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+            if (!token) {
+                return res.status(401).json({ message: "Authorization token is required" });
+            }
+
+            // Decode the JWT to get the current user's ID
+            let decoded;
+            try {
+                decoded = jwt.verify(token, secretKey);
+            } catch (error) {
+                return res.status(401).json({ message: "Invalid or expired token" });
+            }
+
+            const currentUserId = decoded._id;
+            if (!currentUserId) {
+                return res.status(401).json({ message: "Invalid token, userId missing" });
+            }
+
+            // Check if the userId being requested has been muted by the current user
+            const mutedUser = await Mute.findOne({ muterId: currentUserId, muteeId: userId });
+
+            if (mutedUser) {
+                return res.status(403).json({ message: "You have muted this user and cannot view their stories" });
             }
 
             // Extract query parameters for pagination or filtering
@@ -114,16 +141,16 @@ const storyController = {
         }
     },
 
-    // Get All Active Stories of Users the Current User Follows
+    // Get Stories of Users the Current User Follows and skipping muted user's stories
     getAllStories: async (req, res) => {
         try {
-            // Extract token from the authorization header
+            // Step 1: Extract token from the authorization header
             const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
             if (!token) {
                 return res.status(401).json({ message: "Authorization token is required" });
             }
 
-            // Decode the JWT to get the current user's ID
+            // Step 2: Decode the JWT to get the current user's ID
             let decoded;
             try {
                 decoded = jwt.verify(token, secretKey);
@@ -136,7 +163,7 @@ const storyController = {
                 return res.status(401).json({ message: "Invalid token, userId missing" });
             }
 
-            // Get the list of users that the current user follows
+            // Step 3: Get the list of users that the current user follows
             const followedUsers = await Follow.find({ followerId: currentUserId }).select('followeeId');
             const followeeIds = followedUsers.map(follow => follow.followeeId);
 
@@ -144,24 +171,46 @@ const storyController = {
                 return res.status(200).json({ message: 'No stories to display', stories: [] });
             }
 
-            // Fetch active stories from the users that the current user follows
-            const stories = await Story.find({
-                userId: { $in: followeeIds },
-                expirationDate: { $gte: new Date() } // Only fetch non-expired stories
-            }).sort({ createdAt: -1 });
+            // Step 4: Get the list of users that the current user has muted
+            const mutedUsers = await Mute.find({ muterId: currentUserId }).select('muteeId');
+            const mutedUserIds = mutedUsers.map(mute => mute.muteeId);
 
+            // Step 5: Exclude muted users from the list of followees
+            const nonMutedFolloweeIds = followeeIds.filter(followeeId => !mutedUserIds.includes(followeeId));
+
+            if (nonMutedFolloweeIds.length === 0) {
+                return res.status(200).json({ message: 'No stories to display', stories: [] });
+            }
+
+            // Step 6: Extract query parameters for pagination or filtering
+            const { limit, offset } = req.query;
+            const parsedLimit = parseInt(limit) || 10;
+            const parsedOffset = parseInt(offset) || 0;
+
+            // Step 7: Fetch active stories from the non-muted users that the current user follows
+            const stories = await Story.find({
+                userId: { $in: nonMutedFolloweeIds },
+                expirationDate: { $gte: new Date() } // Only fetch non-expired stories
+            })
+                .sort({ createdAt: -1 })
+                .skip(parsedOffset)
+                .limit(parsedLimit);
+
+            // Step 8: Return the fetched stories
             res.status(200).json({
                 message: 'Active stories fetched successfully',
                 total: stories.length,
-                stories: stories
+                stories: stories,
+                limit: parsedLimit,
+                offset: parsedOffset
             });
         } catch (error) {
-            console.log(error)
+            console.log(error);
             res.status(500).json({ message: 'Error fetching stories', error: error });
         }
     },
 
-    // Delete story by ID
+    // Delete story by ID ✅
     deleteStory: async (req, res) => {
         try {
             // Extract userId from token
