@@ -8,20 +8,7 @@ const followController = {
     // Follow a user
     followUser: async (req, res) => {
         try {
-            const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
-            if (!token) {
-                return res.status(401).json({ message: "Authorization token is required" });
-            }
-
-            // Verify and decode the token to extract the user ID (follower)
-            let decoded;
-            try {
-                decoded = jwt.verify(token, secretKey);
-            } catch (error) {
-                return res.status(401).json({ message: "Invalid or expired token" });
-            }
-
-            const followerId = decoded._id;
+            const followerId = req.user._id;
             if (!followerId) {
                 return res.status(401).json({ message: "Invalid token, userId missing" });
             }
