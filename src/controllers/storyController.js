@@ -141,7 +141,7 @@ const storyController = {
         }
     },
 
-    // Get Stories of Users the Current User Follows and skipping muted user's stories
+    // Get Stories of Users the Current User Follows and skipping muted user's stories ✅
     getAllStories: async (req, res) => {
         try {
             // Step 1: Extract token from the authorization header
@@ -175,8 +175,10 @@ const storyController = {
             const mutedUsers = await Mute.find({ muterId: currentUserId }).select('muteeId');
             const mutedUserIds = mutedUsers.map(mute => mute.muteeId);
 
-            // Step 5: Exclude muted users from the list of followees
-            const nonMutedFolloweeIds = followeeIds.filter(followeeId => !mutedUserIds.includes(followeeId));
+            // Step 5: Exclude muted users from the list of followees by comparing ObjectIds properly
+            const nonMutedFolloweeIds = followeeIds.filter(followeeId =>
+                !mutedUserIds.some(mutedId => mutedId.equals(followeeId))
+            );
 
             if (nonMutedFolloweeIds.length === 0) {
                 return res.status(200).json({ message: 'No stories to display', stories: [] });
@@ -187,6 +189,7 @@ const storyController = {
             const parsedLimit = parseInt(limit) || 10;
             const parsedOffset = parseInt(offset) || 0;
 
+            console.log(nonMutedFolloweeIds)
             // Step 7: Fetch active stories from the non-muted users that the current user follows
             const stories = await Story.find({
                 userId: { $in: nonMutedFolloweeIds },
