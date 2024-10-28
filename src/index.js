@@ -1,8 +1,16 @@
 const express = require('express');
 const app = express();
 app.use(express.json());
+const http = require('http');
+const socketIo = require('socket.io');
+const server = http.createServer(app);
+const io = socketIo(server);
 
 require('./config/databaseConfig');
+
+// Import and initialize Socket.IO with `io`
+const socketSetup = require('./utils/socketSetup');
+socketSetup(io);
 
 // Routes
 app.use('/api/users', require('./routes/userRoutes'));
