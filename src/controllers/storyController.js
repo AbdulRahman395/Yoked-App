@@ -1,11 +1,13 @@
 const Story = require('../models/Story');
 const Follow = require('../models/Follow');
 const Mute = require('../models/Mute');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET;
 
 const storyController = {
-    // Add a new story ✅
+    // Add a new story and notify followers
     addStory: async (req, res) => {
         try {
             const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
@@ -40,8 +42,34 @@ const storyController = {
 
             const savedStory = await newStory.save();
 
+            // Get followers from the followers collection
+            const followers = await Follow.find({ followeeId: userId });
+
+            if (followers && followers.length > 0) {
+                // Retrieve the user's full name for the notification message
+                const user = await User.findById(userId);
+
+                // Debug logs to verify the user and fullName field
+                console.log("User retrieved:", user);
+                console.log("User fullName:", user ? user.fullname : "User not found");
+
+                const userName = user ? user.fullname : "Someone";  // Use fullName instead of name
+
+                // Create notifications for each follower
+                const notifications = followers.map(follower => ({
+                    userId: follower.followerId,  // Notify each follower
+                    title: "New Story",
+                    message: `${userName} has uploaded a new story.`,
+                    timestamp: new Date()
+                }));
+
+                // Insert all notifications at once
+                await Notification.insertMany(notifications);
+            }
+
             res.status(200).json({ message: 'Story added successfully', story: savedStory });
         } catch (err) {
+            console.error('Error adding story:', err);
             return res.status(500).json({ message: 'Error adding story', error: err });
         }
     },

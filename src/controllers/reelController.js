@@ -1,7 +1,10 @@
 const Reel = require('../models/Reel');
+const Notification = require('../models/Notification');
+const Follow = require('../models/Follow');
+const User = require('../models/User');
 
 const reelController = {
-    // Create a new reel
+    // Create a new reel and notify followers
     createReel: async (req, res) => {
         try {
             const { title, flair } = req.body;
@@ -24,6 +27,26 @@ const reelController = {
 
             // Save the reel in the database
             const savedReel = await newReel.save();
+
+            // Get followers of the user who created the reel
+            const followers = await Follow.find({ followeeId: userId });
+
+            if (followers && followers.length > 0) {
+                // Retrieve the user's full name for the notification message
+                const user = await User.findById(userId);
+                const userName = user ? user.fullname : "Someone";
+
+                // Create notifications for each follower
+                const notifications = followers.map(follower => ({
+                    userId: follower.followerId,
+                    title: "New Reel",
+                    message: `${userName} has uploaded a new reel titled "${title}".`,
+                    timestamp: new Date()
+                }));
+
+                // Insert all notifications at once
+                await Notification.insertMany(notifications);
+            }
 
             // Return a success response
             return res.status(201).json({

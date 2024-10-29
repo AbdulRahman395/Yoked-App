@@ -44,7 +44,7 @@ const followController = {
                 return res.status(404).json({ message: 'Follower not found' });
             }
 
-            const followerName = follower.name || "Someone";  // Use default if name is not found
+            const followerName = follower.fullname || "Someone";  // Use default if name is not found
 
             // Create a follow notification with the follower's name
             const notification = new Notification({

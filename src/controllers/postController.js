@@ -1,7 +1,10 @@
 const Post = require('../models/Post');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
+const Follow = require('../models/Follow');
 
 const postController = {
-    // Create a new post
+    // Create a new post and notify followers
     createPost: async (req, res) => {
         try {
             const { caption, location, tags, audience, growthPhase, liftFocus, foundation, workoutType } = req.body;
@@ -9,6 +12,7 @@ const postController = {
             // Extract userId from JWT
             const userId = req.user._id;
 
+            // Check required fields
             if (!caption || !location || !tags || !audience) {
                 return res.status(400).json({ message: 'All required fields must be filled' });
             }
@@ -39,6 +43,26 @@ const postController = {
 
             // Save the post in the database
             const savedPost = await newPost.save();
+
+            // Get followers of the user who created the post
+            const followers = await Follow.find({ followeeId: userId });
+
+            if (followers && followers.length > 0) {
+                // Retrieve the user's full name for the notification message
+                const user = await User.findById(userId);
+                const userName = user ? user.fullname : "Someone";
+
+                // Create notifications for each follower
+                const notifications = followers.map(follower => ({
+                    userId: follower.followerId,  // Notify each follower
+                    title: "New Post",
+                    message: `${userName} has created a new post: "${caption}".`,
+                    timestamp: new Date()
+                }));
+
+                // Insert all notifications at once
+                await Notification.insertMany(notifications);
+            }
 
             // Return a success response
             return res.status(201).json({
