@@ -1,4 +1,5 @@
-const User = require('../models/User')
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 const jwt = require('jsonwebtoken');
 const Follow = require('../models/Follow');
 
@@ -36,11 +37,24 @@ const followController = {
 
             await newFollow.save();
 
-            // Add followerId to followee's followers array
-            await User.findByIdAndUpdate(followeeId, { $push: { followers: followerId } });
+            // Fetch the follower's name
+            const follower = await User.findById(followerId);
+            if (!follower) {
+                console.error(`User with ID ${followerId} not found.`);
+                return res.status(404).json({ message: 'Follower not found' });
+            }
 
-            // Add followeeId to follower's following array
-            await User.findByIdAndUpdate(followerId, { $push: { following: followeeId } });
+            const followerName = follower.name || "Someone";  // Use default if name is not found
+
+            // Create a follow notification with the follower's name
+            const notification = new Notification({
+                userId: followeeId,
+                title: "New Follower",
+                message: `${followerName} has started following you.`,
+                timestamp: new Date()
+            });
+            await notification.save();
+
 
             return res.status(201).json({ message: 'Followed successfully', follow: newFollow });
         } catch (error) {
@@ -79,12 +93,6 @@ const followController = {
                 return res.status(404).json({ message: 'Follow relationship not found.' });
             }
 
-            // Remove followerId from followee's followers array
-            await User.findByIdAndUpdate(followeeId, { $pull: { followers: followerId } });
-
-            // Remove followeeId from follower's following array
-            await User.findByIdAndUpdate(followerId, { $pull: { following: followeeId } });
-
             // Success response
             return res.status(200).json({ message: 'Unfollowed successfully' });
         } catch (err) {
@@ -92,6 +100,7 @@ const followController = {
             return res.status(500).json({ error: 'An error occurred while unfollowing the user.' });
         }
     },
+
 
     // Get all followers of a user with JWT
     getMyFollowers: async (req, res) => {

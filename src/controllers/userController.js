@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const generateOTP = require('../utils/generateOtp');
 const nodemailer = require('nodemailer');
 
@@ -238,7 +239,7 @@ const userController = {
 
         try {
             // Extract the JWT token from the Authorization header
-            const token = req.headers.authorization.split(' ')[1];
+            const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
             if (!token) {
                 return res.status(401).json({ message: "Authorization token is required" });
             }
@@ -253,11 +254,29 @@ const userController = {
                 return res.status(404).json({ message: "User not found" });
             }
 
-            // Update the isAthlete status
-            user.isAthlete = isAthlete;
-            await user.save();
+            // Update the isAthlete status only if the value is "Yes" or "No"
+            if (isAthlete === "Yes" || isAthlete === "No") {
+                user.isAthlete = isAthlete;
+                await user.save();
 
-            return res.status(200).json({ message: "isAthlete status updated successfully.", isAthlete: user.isAthlete });
+                // Set notification message based on isAthlete value
+                const notificationMessage = isAthlete === "Yes"
+                    ? "Your athlete status has been enabled."
+                    : "Your athlete status has been disabled.";
+
+                // Create a notification for the isAthlete status update
+                const notification = new Notification({
+                    userId: userId,
+                    title: "Athlete Status Updated",
+                    message: notificationMessage,
+                    timestamp: new Date()
+                });
+                await notification.save();
+
+                return res.status(200).json({ message: "isAthlete status updated successfully.", isAthlete: user.isAthlete });
+            } else {
+                return res.status(400).json({ message: "Invalid value for isAthlete. Use 'Yes' or 'No'." });
+            }
         } catch (error) {
             console.error(error);
             return res.status(500).json({ error: "Internal server error" });
