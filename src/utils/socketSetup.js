@@ -24,9 +24,16 @@ const socketSetup = (io) => {
       socket.broadcast.emit('getOfflineUser', { user_id: userId });
     });
 
-    socket.on('newChat', (data) => {
+    socket.on('newChat', async (data) => {
+      const chat = new Chat({
+        sender_id: data.sender_id,
+        receiver_id: data.receiver_id,
+        message_type: data.message_type,
+        message: data.message
+      });
+      await chat.save();
       socket.broadcast.emit('loadNewChat', data);
-    });
+    });    
 
     socket.on('existsChat', async (data) => {
       const chats = await Chat.find({
