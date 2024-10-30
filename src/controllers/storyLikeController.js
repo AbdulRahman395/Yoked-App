@@ -104,19 +104,22 @@ const storyLikeController = {
             const { storyId } = req.params;
 
             // Find all likes for the specified story and populate user details
-            const likes = await StoryLike.find({ storyId }).populate('userId', 'username fullname profilePicture');
+            const likes = await StoryLike.find({ storyId }).populate('userId', 'username fullname');
+
+            // Calculate the number of likes
+            const likesCount = likes.length;
 
             // Prepare a list of liked users with relevant data
             const likedUsers = likes.map(like => ({
                 userId: like.userId._id,
                 username: like.userId.username,
-                fullname: like.userId.fullname,
-                profilePicture: like.userId.profilePicture
+                fullname: like.userId.fullname
             }));
 
             res.status(200).json({
                 success: true,
                 message: 'Liked users fetched successfully',
+                likes: likesCount,
                 likedUsers: likedUsers
             });
         } catch (error) {
