@@ -4,12 +4,12 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 
 const storyLikeController = {
-    // When user likes story, other user should be notified... and should also be display likes of the stories while user hits getMyStory API
+    // Like a Story
     likeStory: async (req, res) => {
         try {
             const { storyId } = req.params;
             const userId = req.user._id;
-    
+
             // Check if the user already likes the story
             const existingLike = await StoryLike.findOne({ storyId, userId });
             if (existingLike) {
@@ -18,7 +18,7 @@ const storyLikeController = {
                     message: "You have already liked this story"
                 });
             }
-    
+
             // Fetch the username of the user who liked the story
             const likingUser = await User.findById(userId);
             if (!likingUser) {
@@ -27,18 +27,18 @@ const storyLikeController = {
                     message: "User not found"
                 });
             }
-    
+
             // Create a new like
             const like = new StoryLike({ storyId, userId });
             await like.save();
-    
+
             // Update the story's like count in the Story model
             const updatedStory = await Story.findByIdAndUpdate(
                 storyId,
                 { $inc: { likesCount: 1 } },
                 { new: true }
             );
-    
+
             // Notify the story owner
             const storyOwner = updatedStory.userId;
             if (storyOwner.toString() !== userId.toString()) {
@@ -50,7 +50,7 @@ const storyLikeController = {
                 });
                 await notification.save();
             }
-    
+
             res.status(200).json({
                 success: true,
                 message: "Story liked successfully",
@@ -64,8 +64,70 @@ const storyLikeController = {
                 error: error.message
             });
         }
-    } 
+    },
 
+    // Unlike a Story
+    unlikeStory: async (req, res) => {
+        try {
+            const { storyId } = req.params;
+            const userId = req.user._id;
+
+            // Fetch the like
+            const like = await StoryLike.findOneAndDelete({ storyId, userId });
+            if (!like) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Like not found"
+                });
+            }
+
+            // Update the story's like count in the Story model
+            const updatedStory = await Story.findByIdAndUpdate(
+                storyId,
+                { $inc: { likesCount: -1 } },
+                { new: true }
+            );
+
+            res.status(200).json({
+                success: true,
+                message: "Story unliked successfully",
+                data: updatedStory
+            });
+        } catch (error) {
+            console.error("Error unliking");
+        }
+    },
+
+    // Get Liked Stories
+    getStoryLikes: async (req, res) => {
+        try {
+            const { storyId } = req.params;
+
+            // Find all likes for the specified story and populate user details
+            const likes = await StoryLike.find({ storyId }).populate('userId', 'username fullname profilePicture');
+
+            // Prepare a list of liked users with relevant data
+            const likedUsers = likes.map(like => ({
+                userId: like.userId._id,
+                username: like.userId.username,
+                fullname: like.userId.fullname,
+                profilePicture: like.userId.profilePicture
+            }));
+
+            res.status(200).json({
+                success: true,
+                message: 'Liked users fetched successfully',
+                likedUsers: likedUsers
+            });
+        } catch (error) {
+            console.error("Error fetching liked users:", error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to fetch liked users',
+                error: error.message
+            });
+        }
+    }
 }
 
 module.exports = storyLikeController;

@@ -9,9 +9,9 @@ const router = express.Router();
 router.post('/:storyId/like', authMiddleware, storyLikeController.likeStory);
 
 // Route to unlike a story
-// router.delete('/story/:storyId/unlike', authenticateUser, unlikeStory);
+router.delete('/:storyId/unlike', authMiddleware, storyLikeController.unlikeStory);
 
 // // Route to get likes for a story
-// router.get('/story/:storyId/likes', authenticateUser, getStoryLikes);
+router.get('/:storyId/likes', authMiddleware, storyLikeController.getStoryLikes);
 
 module.exports = router;
