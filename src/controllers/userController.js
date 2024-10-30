@@ -27,16 +27,23 @@ const userController = {
         } = req.body;
 
         try {
-            // Check if a user with the same email already exists
-            const existingUser = await User.findOne({ email });
+            // Check if a user with the same email or username already exists
+            const existingUserByEmail = await User.findOne({ email });
+            if (existingUserByEmail) {
+                return res.status(400).json({ error: "Email is already in use. Please use a different email." });
+            }
 
-            if (existingUser) {
-                return res.status(400).json({ error: "User already exists" });
+            const existingUserByUsername = await User.findOne({ username });
+            if (existingUserByUsername) {
+                return res.status(400).json({ error: "Username is already taken. Please choose a different username." });
             }
 
             // Generate hashed password and OTP
             const hashedPassword = await bcrypt.hash(password, 10);
             const otp = generateOTP();
+
+            // Get the profile image path if uploaded
+            const profileImage = req.file ? req.file.filename : null;
 
             // Create new user with isVerified set to false
             const newUser = await User.create({
@@ -49,16 +56,17 @@ const userController = {
                 address,
                 gender,
                 isAthlete,
-                dob, // Store dob for age calculation
-                currentWeight, // Store user's current weight
-                goalWeight, // Store user's goal weight
-                height, // Store user's height
-                otp, // OTP for verification
+                dob,
+                currentWeight: Number(currentWeight),
+                goalWeight: Number(goalWeight),
+                height: Number(height),
+                profileImage,
+                otp,
                 otpExpire: Date.now() + 300000, // OTP expiration time (5 minutes)
                 isVerified: false
             });
 
-            // Send OTP to user's email for verification
+            // Configure email transport
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
@@ -67,22 +75,26 @@ const userController = {
                 }
             });
 
+            // Define email options
             const mailOptions = {
                 from: process.env.EMAIL_USER,
                 to: email,
                 subject: 'Verify Your Account - OTP',
                 html: `<p>Dear ${fullname},</p>
-                    <p>Here is your One-Time Password (OTP) to verify your account:</p>
-                    <p><b>${otp}</b></p>
-                    <p>This OTP is valid for 5 minutes.</p>`
+                <p>Here is your One-Time Password (OTP) to verify your account:</p>
+                <p><b>${otp}</b></p>
+                <p>This OTP is valid for 5 minutes.</p>`
             };
 
+            // Send the OTP email
             await transporter.sendMail(mailOptions);
 
             return res.status(201).json({ message: "User registered. Please verify your email by entering the OTP sent to your email." });
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({ error: "Internal server error" });
+            console.error("Error during registration:", error);
+
+            // If the error is caused by database validation or other reasons
+            return res.status(500).json({ error: "Internal server error. Please try again later." });
         }
     },
 

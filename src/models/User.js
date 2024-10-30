@@ -58,7 +58,8 @@ const UserSchema = new Schema({
     height: {
         type: Number,
         required: true
-    }
+    },
+    profileImage: { type: String }
 });
 
 // Index for OTP expiration
