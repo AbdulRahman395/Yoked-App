@@ -23,6 +23,7 @@ app.use('/api/mutes', require('./routes/muteRoutes'));
 app.use('/api/reels', require('./routes/reelRoutes'));
 app.use('/api/storylikes', require('./routes/storyLikeRoutes'));
 app.use('/api/communityposts', require('./routes/communityPostRoutes'));
+app.use('/api/reacts', require('./routes/reactRoutes'));
 
 const port = 5000;
 app.listen(port, () => {

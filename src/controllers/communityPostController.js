@@ -187,37 +187,51 @@ const communityPostController = {
         }
     },
 
-    // Add reaction to a post
+
+    // Add or update a reaction to a post
     addReaction: async (req, res) => {
         try {
             const { postId } = req.params;
             const { reaction } = req.body;
+            const userId = req.user._id;
 
-            // Validate reaction type
+            // Validate the reaction type
             if (!['like', 'love', 'fire', 'muscle'].includes(reaction)) {
-                console.log(reaction)
                 return res.status(400).json({ message: "Invalid reaction type" });
             }
 
+            // Find the post
             const post = await CommunityPost.findById(postId);
             if (!post) {
                 return res.status(404).json({ message: "Post not found" });
             }
 
-            // Add reaction to the post
-            post.reactions.push(reaction);
+            // Find the existing reaction by this user
+            const existingReactionIndex = post.reactions.findIndex(
+                (r) => r.userId.toString() === userId.toString()
+            );
+
+            if (existingReactionIndex !== -1) {
+                // Update the existing reaction
+                post.reactions[existingReactionIndex].type = reaction;
+            } else {
+                // Add a new reaction
+                post.reactions.push({ userId, type: reaction });
+            }
+
+            // Save the updated post
             await post.save();
 
             res.status(200).json({
                 success: true,
-                message: 'Reaction added successfully',
+                message: 'Reaction added/updated successfully',
                 post
             });
         } catch (error) {
-            console.error("Error adding reaction:", error);
+            console.error("Error adding/updating reaction:", error);
             res.status(500).json({
                 success: false,
-                message: 'Failed to add reaction',
+                message: 'Failed to add/update reaction',
                 error: error.message
             });
         }

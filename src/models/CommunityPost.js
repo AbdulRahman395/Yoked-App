@@ -15,17 +15,10 @@ const postSchema = new Schema({
         type: String,
         required: true
     },
-    media: {
+    mediaUrl: {
         type: String,
         required: true
     },
-    reactions: [
-        {
-            type: String,
-            enum: ['like', 'love', 'fire', 'muscle'],
-            required: true
-        }
-    ],
     createdAt: {
         type: Date,
         default: Date.now
