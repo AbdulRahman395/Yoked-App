@@ -50,11 +50,7 @@ const storyController = {
                 // Retrieve the user's full name for the notification message
                 const user = await User.findById(userId);
 
-                // Debug logs to verify the user and fullName field
-                console.log("User retrieved:", user);
-                console.log("User fullName:", user ? user.fullname : "User not found");
-
-                const userName = user ? user.fullname : "Someone";  // Use fullName instead of name
+                const userName = user ? user.fullname : "Someone";
 
                 // Create notifications for each follower
                 const notifications = followers.map(follower => ({

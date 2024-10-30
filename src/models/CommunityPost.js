@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-// Define the Community Post schema
-const communityPostSchema = new mongoose.Schema({
+const postSchema = new Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -9,23 +9,27 @@ const communityPostSchema = new mongoose.Schema({
     },
     title: {
         type: String,
-        required: true,
+        required: true
     },
-    content: {
+    description: {
         type: String,
-        required: true,
+        required: true
     },
-    image: {
+    media: {
         type: String,
-        required: true,
+        required: true
     },
+    reactions: [
+        {
+            type: String,
+            enum: ['like', 'love', 'fire', 'muscle'],
+            required: true
+        }
+    ],
     createdAt: {
         type: Date,
-        default: Date.now,
-    },
+        default: Date.now
+    }
 });
 
-// Create the Community Post model
-const CommunityPost = mongoose.model('CommunityPost', communityPostSchema);
-
-module.exports = CommunityPost;
+module.exports = mongoose.model('Communitypost', postSchema);

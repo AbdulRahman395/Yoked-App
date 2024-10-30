@@ -22,6 +22,7 @@ app.use('/api/stories', require('./routes/storyRoutes'));
 app.use('/api/mutes', require('./routes/muteRoutes'));
 app.use('/api/reels', require('./routes/reelRoutes'));
 app.use('/api/storylikes', require('./routes/storyLikeRoutes'));
+app.use('/api/communityposts', require('./routes/communityPostRoutes'));
 
 const port = 5000;
 app.listen(port, () => {
