@@ -1,6 +1,7 @@
 const StoryLike = require('../models/StoryLike');
 const Story = require('../models/Story');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 
 const storyLikeController = {
     // When user likes story, other user should be notified... and should also be display likes of the stories while user hits getMyStory API
@@ -15,6 +16,15 @@ const storyLikeController = {
                 return res.status(400).json({
                     success: false,
                     message: "You have already liked this story"
+                });
+            }
+    
+            // Fetch the username of the user who liked the story
+            const likingUser = await User.findById(userId);
+            if (!likingUser) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found"
                 });
             }
     
@@ -35,7 +45,7 @@ const storyLikeController = {
                 const notification = new Notification({
                     userId: storyOwner,
                     title: "New Story Like",
-                    message: `Your story was liked by a user.`,
+                    message: `${likingUser.fullname} has liked your story.`,
                     isRead: false
                 });
                 await notification.save();
@@ -54,7 +64,7 @@ const storyLikeController = {
                 error: error.message
             });
         }
-    }    
+    } 
 
 }
 
