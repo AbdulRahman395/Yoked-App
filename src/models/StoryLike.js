@@ -8,13 +8,13 @@ const likeSchema = new Schema({
         ref: 'User',
         required: true
     },
-    postId: {
+    storyId: {
         type: Schema.Types.ObjectId,
-        ref: 'Post',
+        ref: 'Story',
         required: true
     },
-});
+}, { timestamps: true });
 
-const Like = mongoose.model('Like', likeSchema);
+const StoryLike = mongoose.model('Storylike', likeSchema);
 
-module.exports = Like;
+module.exports = StoryLike;
