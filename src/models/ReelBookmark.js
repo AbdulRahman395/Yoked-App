@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const bookmarkSchema = new Schema({
+const reelbookmarkSchema = new Schema({
     userId: {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -14,6 +14,6 @@ const bookmarkSchema = new Schema({
     }
 }, { timestamps: true });
 
-const Bookmark = mongoose.model('Bookmark', bookmarkSchema);
+const ReelBookmark = mongoose.model('Reelbookmark', reelbookmarkSchema);
 
-module.exports = Bookmark;
+module.exports = ReelBookmark;
