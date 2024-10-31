@@ -19,33 +19,10 @@ const authMiddleware = (req, res, next) => {
 
 module.exports = authMiddleware;
 
-// // Class to extract userId from JWT
-// class AuthValidator {
-//     constructor(idField = '_id') {
-//         this.idField = idField;
-//     }
-
-//     verifyToken(req) {
-//         const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
-//         if (!token) {
-//             return { status: 401, message: "Authorization token is required" };
-//         }
-
-//         // Verify and decode the token to extract the user ID (xId)
-//         let decoded;
-//         try {
-//             decoded = jwt.verify(token, process.env.JWT_SECRET); // Secret key taken from environment variables
-//         } catch (error) {
-//             return { status: 401, message: "Invalid or expired token" };
-//         }
-
-//         const xId = decoded[this.idField];
-//         if (!xId) {
-//             return { status: 401, message: `Invalid token, ${this.idField} missing` };
-//         }
-
-//         return { status: 200, xId };
-//     }
-// }
-
-// module.exports = AuthValidator
+// Middleware for authentication
+module.exports = (req, res, next) => {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect('/auth/google');
+};

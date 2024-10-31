@@ -1,35 +1,22 @@
-// const session = require('express-session');
-// const passport = require('passport');       // Import passport
-// const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const passport = require('passport');
 
-// // Session setup
-// app.use(session({
-//     secret: 'secretkey',
-//     resave: false,
-//     saveUninitialized: true,
-// }));
+exports.loginWithGoogle = passport.authenticate('google', { scope: ['profile', 'email'] });
 
-// // Initialize passport and session
-// app.use(passport.initialize());
-// app.use(passport.session());
+exports.googleCallback = passport.authenticate('google', {
+    failureRedirect: '/',
+    successRedirect: '/profile'
+});
 
-// // Passport configuration
-// passport.use(new GoogleStrategy({
-//     clientID: '916045238748-ioe54blmnragdbecbjts89qn4fbq03mf.apps.googleusercontent.com',
-//     clientSecret: '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',
-//     callbackURL: 'http://localhost:5000/auth/google/callback'
-// }, (accessToken, refreshToken, profile, done) => {
-//     // In a real app, you would save the user profile to the database
-//     return done(null, profile);
-// }));
+exports.logout = (req, res) => {
+    req.logout(err => {
+        if (err) { return next(err); }
+        res.redirect('/');
+    });
+};
 
-// // Serialize and deserialize user
-// passport.serializeUser((user, done) => {
-//     done(null, user);
-// });
-
-// passport.deserializeUser((user, done) => {
-//     done(null, user);
-// });
-
-// module.exports = passport;
+exports.getProfile = (req, res) => {
+    if (!req.isAuthenticated()) {
+        return res.redirect('/');
+    }
+    res.render('profile', { user: req.user });
+};

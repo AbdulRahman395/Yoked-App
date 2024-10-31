@@ -1,27 +1,16 @@
-// const passport = require('passport');
-// const express = require('express');
-// const router = express.Router();
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/authController');
+const authMiddleware = require('../middlewares/authMiddleware');
 
-// // Google OAuth routes
-// router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// Google OAuth login and callback routes
+router.get('/google', authController.loginWithGoogle);
+router.get('/google/callback', authController.googleCallback);
 
-// router.get('/auth/google/callback',
-//     passport.authenticate('google', { failureRedirect: '/' }),
-//     (req, res) => {
-//         res.redirect('/profile');
-//     });
+// Profile route (protected)
+router.get('/profile', authMiddleware, authController.getProfile);
 
-// // Profile route - secured route
-// router.get('/profile', (req, res) => {
-//     if (!req.isAuthenticated()) {
-//         return res.redirect('/');
-//     }
-//     res.send(`Hello ${req.user.displayName}`);
-// });
+// Logout route
+router.get('/logout', authController.logout);
 
-// // Home route
-// router.get('/', (req, res) => {
-//     res.send('<a href="/auth/google">Login with Google</a>');
-// });
-
-// module.exports = router;
+module.exports = router;
