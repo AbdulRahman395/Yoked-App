@@ -4,12 +4,12 @@ const bookmarkController = require('../controllers/reelBookmarkController');
 const authMiddleware = require('../middlewares/authMiddleware')
 
 // Route to add a comment to a post
-router.post('/add', authMiddleware, bookmarkController.addToReelBookmark);
+router.post('/add-reel', authMiddleware, bookmarkController.addToReelBookmark);
 
 // Route to update a comment
-router.get('/get-bookmarks', authMiddleware, bookmarkController.getReelBookmarks);
+router.get('/get-reel-bookmarks', authMiddleware, bookmarkController.getReelBookmarks);
 
 // Route to delete a comment
-router.delete('/:id/remove', authMiddleware, bookmarkController.removeFromReelBookmark);
+router.delete('/:id/remove-reel', authMiddleware, bookmarkController.removeFromReelBookmark);
 
 module.exports = router;
