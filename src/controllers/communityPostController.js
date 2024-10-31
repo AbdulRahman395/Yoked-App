@@ -2,6 +2,7 @@ const CommunityPost = require('../models/CommunityPost');
 const Follow = require('../models/Follow');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const React = require('../models/React');
 
 const communityPostController = {
     // Create a new post ✅
@@ -61,17 +62,48 @@ const communityPostController = {
         }
     },
 
-    // Get all posts ✅
+    // Get all posts with reactions breakdown ✅
     getAllPosts: async (req, res) => {
         try {
+            // Fetch all posts and populate user information
             const posts = await CommunityPost.find()
-                .populate('userId', 'username') // Populate user information
-                .sort({ createdAt: -1 }); // Sort by newest first
+                .populate('userId', 'username')
+                .sort({ createdAt: -1 });
+
+            // Map over posts to add reactions for each
+            const postsWithReactions = await Promise.all(posts.map(async (post) => {
+                // Aggregate reactions for this post
+                const reactions = await React.aggregate([
+                    { $match: { postId: post._id } }, // Match reactions for this post
+                    {
+                        $group: {
+                            _id: "$reaction",
+                            count: { $sum: 1 },
+                            users: { $push: "$userId" } // Collect user IDs who reacted
+                        }
+                    }
+                ]);
+
+                // Prepare reaction summary
+                const reactionSummary = {
+                    totalReactions: reactions.reduce((sum, r) => sum + r.count, 0),
+                    breakdown: await Promise.all(reactions.map(async (r) => ({
+                        reaction: r._id,
+                        count: r.count,
+                        users: await User.find({ _id: { $in: r.users } }, 'username') // Populate usernames for users who reacted
+                    })))
+                };
+
+                return {
+                    ...post._doc, // Spread post fields
+                    reactions: reactionSummary // Add reactions summary to each post
+                };
+            }));
 
             res.status(200).json({
                 success: true,
                 message: 'Posts fetched successfully',
-                posts
+                posts: postsWithReactions
             });
         } catch (error) {
             console.error("Error fetching posts:", error);
@@ -88,6 +120,7 @@ const communityPostController = {
         try {
             const { postId } = req.params;
 
+            // Find the post by ID and populate the user who created it
             const post = await CommunityPost.findById(postId).populate('userId', 'username');
             if (!post) {
                 return res.status(404).json({
@@ -96,10 +129,38 @@ const communityPostController = {
                 });
             }
 
+            // Aggregate reactions for the post
+            const reactions = await React.aggregate([
+                { $match: { postId: post._id } }, // Match reactions for this post
+                {
+                    $group: {
+                        _id: "$reaction",
+                        count: { $sum: 1 },
+                        users: { $push: "$userId" } // Collect user IDs who reacted
+                    }
+                }
+            ]);
+
+            // Prepare the reactions summary
+            const reactionSummary = {
+                totalReactions: reactions.reduce((sum, r) => sum + r.count, 0),
+                breakdown: reactions.map((r) => ({
+                    reaction: r._id,
+                    count: r.count,
+                    users: r.users // Array of user IDs for each reaction
+                }))
+            };
+
+            // Populate user details for each user who reacted
+            for (const reaction of reactionSummary.breakdown) {
+                reaction.users = await User.find({ _id: { $in: reaction.users } }, 'username fullname');
+            }
+
             res.status(200).json({
                 success: true,
                 message: 'Post fetched successfully',
-                post
+                post,
+                reactions: reactionSummary
             });
         } catch (error) {
             console.error("Error fetching post:", error);
