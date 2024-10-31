@@ -13,5 +13,6 @@ router.post('/reset-password', userController.resetPassword);
 router.put('/update-athlete-status', userController.updateAthleteStatus);
 router.get('/get-profile/:userId', userController.getUserById);
 router.get('/get-my-profile', userController.getMyProfile);
+router.get('/search-users', userController.searchUsers);
 
 module.exports = router;

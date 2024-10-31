@@ -371,6 +371,49 @@ const userController = {
             console.error(error);
             return res.status(500).json({ error: "Internal server error" });
         }
+    },
+
+    // Search for users by name (case-insensitive, partial matching)
+    searchUsers: async (req, res) => {
+        try {
+            const { name } = req.query;
+
+            if (!name) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Name query parameter is required'
+                });
+            }
+
+            // Case-insensitive regex to match any part of fullname or username
+            const regex = new RegExp(name, 'i'); // 'i' flag makes it case-insensitive
+            const users = await User.find({
+                $or: [
+                    { fullname: { $regex: regex } },
+                    { username: { $regex: regex } }
+                ]
+            }).select('fullname username email profileImage'); // Adjust fields to return relevant data
+
+            if (users.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No users found'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Users fetched successfully',
+                users
+            });
+        } catch (error) {
+            console.error("Error searching users:", error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to fetch users',
+                error: error.message
+            });
+        }
     }
 }
 
