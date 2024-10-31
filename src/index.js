@@ -25,6 +25,8 @@ app.use('/api/storylikes', require('./routes/storyLikeRoutes'));
 app.use('/api/communityposts', require('./routes/communityPostRoutes'));
 app.use('/api/reacts', require('./routes/reactRoutes'));
 app.use('/api/comments', require('./routes/commentRoutes'));
+app.use('/api/saves', require('./routes/savedRoutes'));
+app.use('/api/bookmarks', require('./routes/bookmarkRoutes'));
 
 const port = 5000;
 app.listen(port, () => {
