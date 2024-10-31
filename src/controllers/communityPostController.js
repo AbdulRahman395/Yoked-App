@@ -115,6 +115,30 @@ const communityPostController = {
         }
     },
 
+    // Get all posts of authenticated user
+    getMyPosts: async (req, res) => {
+        try {
+            const userId = req.user._id;
+
+            // Fetch all posts created by this user, sorted by creation date, and populate user information
+            const posts = await CommunityPost.find({ userId })
+                .sort({ createdAt: -1 });
+
+            res.status(200).json({
+                success: true,
+                message: 'User posts fetched successfully',
+                posts
+            });
+        } catch (error) {
+            console.error("Error fetching user posts:", error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to fetch user posts',
+                error: error.message
+            });
+        }
+    },
+
     // Get a single post by ID ✅
     getPostById: async (req, res) => {
         try {

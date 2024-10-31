@@ -10,6 +10,9 @@ router.post('/create-new', upload.single('image'), authMiddleware, postControlle
 // Route to get all posts
 router.get('/get-all', authMiddleware, postController.getAllPosts);
 
+// Route to get all posts of authetnticated user
+router.get('/get-my-posts', authMiddleware, postController.getMyPosts);
+
 // Route to get a single post by ID
 router.get('/get-single/:postId', authMiddleware, postController.getPostById);
 
@@ -18,8 +21,5 @@ router.put('/update/:postId', upload.single('image'), authMiddleware, postContro
 
 // Route to delete a post by ID
 router.delete('/delete/:postId', authMiddleware, postController.deletePost);
-
-// Route to add a reaction to a post
-router.post('/react/:postId/reaction', authMiddleware, postController.addReaction);
 
 module.exports = router;
