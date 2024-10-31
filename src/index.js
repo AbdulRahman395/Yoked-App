@@ -28,6 +28,7 @@ app.use('/api/comments', require('./routes/commentRoutes'));
 app.use('/api/saves', require('./routes/savedRoutes'));
 app.use('/api/reelbookmarks', require('./routes/reelBookmarkRoutes'));
 app.use('/api/postbookmarks', require('./routes/postBookmarkRoutes'));
+app.use('/api/contacts', require('./routes/contactRoutes'));
 
 const port = 5000;
 app.listen(port, () => {
