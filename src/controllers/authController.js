@@ -1,22 +1,21 @@
-const passport = require('passport');
-
-exports.loginWithGoogle = passport.authenticate('google', { scope: ['profile', 'email'] });
-
-exports.googleCallback = passport.authenticate('google', {
-    failureRedirect: '/',
-    successRedirect: '/profile'
-});
-
-exports.logout = (req, res) => {
-    req.logout(err => {
-        if (err) { return next(err); }
-        res.redirect('/');
-    });
+const loadAuth = (req, res) => {
+    res.render('auth');
 };
 
-exports.getProfile = (req, res) => {
-    if (!req.isAuthenticated()) {
-        return res.redirect('/');
+const successGoogleLogin = (req, res) => {
+    if (!req.user) {
+        res.redirect('/failure');
     }
-    res.render('profile', { user: req.user });
+    console.log(req.user);
+    res.send("Welcome " + req.user.email);
+};
+
+const failureGoogleLogin = (req, res) => {
+    res.send("Error");
+};
+
+module.exports = {
+    loadAuth,
+    successGoogleLogin,
+    failureGoogleLogin
 };

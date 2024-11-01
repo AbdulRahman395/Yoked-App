@@ -9,12 +9,12 @@ const UserSchema = new Schema({
     },
     username: {
         type: String,
-        required: true,
+        required: function () { return !this.googleId; },
         unique: true
     },
     phone: {
         type: String,
-        required: true
+        required: function () { return !this.googleId; }
     },
     email: {
         type: String,
@@ -23,7 +23,7 @@ const UserSchema = new Schema({
     },
     password: {
         type: String,
-        required: true
+        required: function () { return !this.googleId; }
     },
     otp: {
         type: String

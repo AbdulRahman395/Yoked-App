@@ -1,16 +1,30 @@
 const express = require('express');
-const router = express.Router();
-const authController = require('../controllers/authController');
-const authMiddleware = require('../middlewares/authMiddleware');
+const router = express();
+const passport = require('passport');
+require('../config/passport');
 
-// Google OAuth login and callback routes
-router.get('/google', authController.loginWithGoogle);
-router.get('/google/callback', authController.googleCallback);
+router.use(passport.initialize());
+router.use(passport.session());
 
-// Profile route (protected)
-router.get('/profile', authMiddleware, authController.getProfile);
+const userController = require('../controllers/authController');
 
-// Logout route
-router.get('/logout', authController.logout);
+router.get('/', userController.loadAuth);
+
+// Auth
+router.get('/auth/google', passport.authenticate('google', { scope: [ 'email', 'profile' ] }));
+
+// Auth Callback
+router.get('/auth/google/callback',
+    passport.authenticate('google', {
+        successRedirect: '/success',
+        failureRedirect: '/failure'
+    })
+);
+
+// Success
+router.get('/success', userController.successGoogleLogin);
+
+// Failure
+router.get('/failure', userController.failureGoogleLogin);
 
 module.exports = router;

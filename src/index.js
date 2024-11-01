@@ -7,8 +7,8 @@ const socketIo = require('socket.io');
 const server = http.createServer(app);
 const io = socketIo(server);
 const session = require('express-session');
-const path = require('path');
-const passport = require('./config/passport');
+const passport = require('passport');
+// const passport = require('./config/passport');
 
 require('./config/databaseConfig');
 
@@ -33,17 +33,19 @@ app.use('/api/saves', require('./routes/savedRoutes'));
 app.use('/api/reelbookmarks', require('./routes/reelBookmarkRoutes'));
 app.use('/api/postbookmarks', require('./routes/postBookmarkRoutes'));
 app.use('/api/contacts', require('./routes/contactRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
 
-// Session setup
 app.use(session({
-    secret: 'myscrete',
     resave: false,
     saveUninitialized: true,
+    secret: process.env.SESSION_SECRET
 }));
 
-// Initialize Passport and session
-app.use(passport.initialize());
-app.use(passport.session());
+app.set('view engine', 'ejs');
+
+const userRoutes = require('./routes/authRoutes');
+
+app.use('/', userRoutes);
 
 const port = 5000;
 app.listen(port, () => {
