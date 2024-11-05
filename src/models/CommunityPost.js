@@ -15,7 +15,7 @@ const postSchema = new Schema({
         type: String,
         required: true
     },
-    mediaUrl: {
+    media: {
         type: String,
         required: true
     },

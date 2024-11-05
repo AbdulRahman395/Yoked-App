@@ -5,7 +5,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const upload = require('../config/multerConfig');
 
 // Route to create a new post
-router.post('/create-new', upload.single('image'), authMiddleware, postController.createPost);
+router.post('/create-new', upload.single('media'), authMiddleware, postController.createPost);
 
 // Route to get all posts
 router.get('/get-all', authMiddleware, postController.getAllPosts);
