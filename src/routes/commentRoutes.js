@@ -13,6 +13,9 @@ router.put('/:commentId/update-comment', authMiddleware, commentController.updat
 router.delete('/:commentId/delete', authMiddleware, commentController.deleteComment);
 
 // Route to get all comments for a post
-router.get('/:postId/get-comments', authMiddleware, commentController.getCommentsByPost);
+router.get('/:postId/get-comments', authMiddleware, commentController.getTopCommentsByPost);
+
+// Route to get all comments for a post
+router.get('/:commentId/get-child-comments', authMiddleware, commentController.getChildComments);
 
 module.exports = router;

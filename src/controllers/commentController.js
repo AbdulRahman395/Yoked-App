@@ -2,15 +2,15 @@ const Comment = require('../models/Comment');
 const User = require('../models/User');
 
 const commentController = {
-    // Add a Comment
+    // Add a Comment or Reply
     addComment: async (req, res) => {
         try {
             const { postId } = req.params;
-            const { comment } = req.body;
+            const { comment, parentId } = req.body; // Accept parentId for nested comments
             const userId = req.user._id;
 
             // Create a new comment
-            const newComment = new Comment({ userId, postId, comment });
+            const newComment = new Comment({ userId, postId, comment, parentId });
             await newComment.save();
 
             res.status(201).json({
@@ -94,30 +94,74 @@ const commentController = {
         }
     },
 
-    // Get All Comments for a Post
-    getCommentsByPost: async (req, res) => {
+    // Get All Top-Level Comments for a Post
+    getTopCommentsByPost: async (req, res) => {
         try {
             const { postId } = req.params;
 
-            // Find all comments for the post, sorted by creation date, and populate user details
-            const comments = await Comment.find({ postId })
-                .populate('userId', 'username fullname profileImage') // Populate username of the user who commented
+            // Find all top-level comments for the post
+            const comments = await Comment.find({ postId, parentId: null })
+                .populate('userId', 'username fullname profileImage') // Populate user details
                 .sort({ createdAt: -1 });
+
+            // Add replies count for each comment
+            const commentsWithRepliesCount = await Promise.all(comments.map(async (comment) => {
+                const repliesCount = await Comment.countDocuments({ parentId: comment._id });
+                return {
+                    ...comment.toObject(),
+                    repliesCount
+                };
+            }));
 
             res.status(200).json({
                 success: true,
-                message: 'Comments fetched successfully',
-                comments
+                message: 'Top comments fetched successfully',
+                comments: commentsWithRepliesCount
             });
         } catch (error) {
-            console.error("Error fetching comments:", error);
+            console.error("Error fetching top comments:", error);
             res.status(500).json({
                 success: false,
-                message: 'Failed to fetch comments',
+                message: 'Failed to fetch top comments',
+                error: error.message
+            });
+        }
+    },
+
+    // Get All Child Comments for a Specific Comment
+    getChildComments: async (req, res) => {
+        try {
+            const { commentId } = req.params;
+
+            // Find all child comments for the specified comment
+            const childComments = await Comment.find({ parentId: commentId })
+                .populate('userId', 'username fullname profileImage') // Populate user details
+                .sort({ createdAt: -1 });
+
+            // Add replies count for each child comment
+            const childCommentsWithRepliesCount = await Promise.all(childComments.map(async (comment) => {
+                const repliesCount = await Comment.countDocuments({ parentId: comment._id });
+                return {
+                    ...comment.toObject(),
+                    repliesCount
+                };
+            }));
+
+            res.status(200).json({
+                success: true,
+                message: 'Child comments fetched successfully',
+                comments: childCommentsWithRepliesCount
+            });
+        } catch (error) {
+            console.error("Error fetching child comments:", error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to fetch child comments',
                 error: error.message
             });
         }
     }
-}
+
+};
 
 module.exports = commentController;
