@@ -9,7 +9,9 @@ connect.then(
         console.log("Database has been connected successfully.")
     }
 ).catch(
-    () => {
+    (err) => {
+        console.log(err);
+        
         console.log("Database couldn't connect.")
     }
 )
