@@ -45,6 +45,29 @@ const userController = {
             // Get the profile image path if uploaded
             const profileImage = req.file ? req.file.filename : null;
 
+            // Configure email transport
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+
+            // Define email options
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Verify Your Account - OTP',
+                html: `<p>Dear ${fullname},</p>
+            <p>Here is your One-Time Password (OTP) to verify your account:</p>
+            <p><b>${otp}</b></p>
+            <p>This OTP is valid for 5 minutes.</p>`
+            };
+
+            // Send the OTP email first
+            await transporter.sendMail(mailOptions);
+
             // Create new user with isVerified set to false
             const newUser = await User.create({
                 fullname,
@@ -66,37 +89,20 @@ const userController = {
                 isVerified: false
             });
 
-            // Configure email transport
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
-
-            // Define email options
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: 'Verify Your Account - OTP',
-                html: `<p>Dear ${fullname},</p>
-                <p>Here is your One-Time Password (OTP) to verify your account:</p>
-                <p><b>${otp}</b></p>
-                <p>This OTP is valid for 5 minutes.</p>`
-            };
-
-            // Send the OTP email
-            await transporter.sendMail(mailOptions);
-
             return res.status(201).json({ message: "User registered. Please verify your email by entering the OTP sent to your email." });
         } catch (error) {
             console.error("Error during registration:", error);
 
-            // If the error is caused by database validation or other reasons
+            // If the error is caused by the email sending process
+            if (error.response) {
+                return res.status(500).json({ error: "Failed to send OTP email. Please try again later." });
+            }
+
+            // Handle other internal errors
             return res.status(500).json({ error: "Internal server error. Please try again later." });
         }
     },
+
 
     // Verify OTP
     verifyOTP: async (req, res) => {
